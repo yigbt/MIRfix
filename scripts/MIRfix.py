@@ -1208,11 +1208,16 @@ def readfold(listnewold,filename,oldlstlstr,oldlstlstl,spos,epos,newspos,newepos
                             for i in matdescsplit:
                                 matstardesc=str(matstardesc)+" "+str(i)
 
+                            log.debug( ["matstardesc: ", matstardesc])
+                            log.debug( listofmirstar)
                             listofmirstar.append(matstardesc)
                             listofmirstar.append(str(mirstar))
                             listofmirstar.append(str(mirstarspos)+".."+str(mirstarepos))
+                            log.debug( listofmirstar)
                             precsplit=precid.split()
+                            log.debug( ["precsplit: ", precsplit])
                             listofmirstar.append(str(precsplit[1]))
+                            log.debug( [str( precsplit[1])])
                             xcut=len(oldprecseq[:mirstarspos])
                             ycut=len(oldprecseq[mirstarepos+1:])
                             if mirorien=='5p' and ycut>10:
@@ -3118,7 +3123,9 @@ def sublist(queue, configurer, level, filename, args):
         listnomatremoved=[]
         flagnomatexists=False
 
-        ## prepare output directory for current family
+        if filename.endswith( ".fa"):
+            filename = filename[-3]
+
         filename = str( filename).strip()
         outdir = str( args.outdir) + filename + ".out/"
         makeoutdir( outdir, args.force)
@@ -3471,10 +3478,7 @@ def sublist(queue, configurer, level, filename, args):
                     mtfs = openfile(outdir+filename.strip()+"-mirstar.fa")
                     for starrec in SeqIO.parse(mtfs,'fasta'):
                         curmatsplit=(starrec.description).split()
-                        curmatsplit1=(curmatsplit[1]).split('-')
-                        starrecID=curmatsplit1[0]
-
-                        if (curmatID).strip()==(starrecID).strip() and (resprecid.strip() in starrec.description):
+                        if resprecid == curmatsplit[-1]:
                             curmatstar=str(starrec.seq)
                             star=True
                             break
@@ -3638,11 +3642,8 @@ def sublist(queue, configurer, level, filename, args):
                     with openfile(outdir+filename.strip()+"-mirstar.fa") as msfa:
                         for starrec in SeqIO.parse(msfa,'fasta'):
                             curmatsplit=(starrec.description).split()
-                            curmatsplit1=(curmatsplit[1]).split('-')
-                            starrecID=curmatsplit1[0]
-                            #if (curmatID).strip()==(starrecID).strip(): #or (curmatID).strip()+'/' in (starrecID).strip() and (resprecid.strip() in starrec.description):
-                            if (curmatID).strip()==(starrecID).strip(): #CAVH
-                                curmatstar=str(starrec.seq)
+                            if resprecid == curmatsplit[-1]: #CAVH
+                                curmatstar= str(starrec.seq)
                                 star=True
                                 break
                             #else:
@@ -3661,6 +3662,13 @@ def sublist(queue, configurer, level, filename, args):
                                                  userflanking)
 
                     if coortemp1 == None or coortemp2 == None:
+
+                        ## THIS IS THE CASE IN FAMILY MIPF0001319 for example
+                        ## where rat candidate 3 has potential mature and mature* sequences
+                        ## but no suitable pair could be found
+                        ## Hence, the variables coortemp1 and coortemp2 are None
+                        ## Shouldn't this sequence be removed???
+                        
                         log.error(logid+'Not possible to locate miR or miR* in ' + curmatID)
 
                     if coortemp2<coortemp1:
@@ -4609,7 +4617,7 @@ def parseargs():
     parser.add_argument("-a", "--mature", type=str, required=True, help='FASTA files containing mature sequences')
     parser.add_argument("-d", "--maturedir", type=str, default='', help='Directory of matures')
     parser.add_argument("-o", "--outdir", type=str, default='', help='Directory for output')
-    parser.add_argument("--force", action='store_true', help='Force MIRfix to overwrite existing output directories')
+    parser.add_argument("--force", action='store_true', help='Force MIRfix to overwrite existing output directory')
     parser.add_argument("-e", "--extension", type=int, default=10, help='Extension of nucleotides for precursor cutting')
     parser.add_argument("-l", "--logdir", type=str, default='LOGS', help='Directory to write logfiles to')
     parser.add_argument("--loglevel", type=str, default='WARNING', choices=['WARNING','ERROR','INFO','DEBUG','CRITICAL'], help="Set log level")
@@ -4648,14 +4656,7 @@ def main(args):
         lfams = []
         with openfile(args.families) as filelist:
             for line in filelist:
-                line = line.strip()
-                if line.endswith( ".fa"):
-                    line = line[:-3]
-                ## check if there are already output directories
-                ## to prevent errors 
-                if os.path.exists( args.outdir + line + ".out/") and not args.force:
-                    sys.exit( '\nError: At least one output directory already exists! Won\'t override!\nTo override the original output folder, please specify the \'--force\' option.\n')
-                lfams.append( line)
+                lfams.append(line.strip())
 
         for fam in lfams:
             #sublist(queue, fam, args)
