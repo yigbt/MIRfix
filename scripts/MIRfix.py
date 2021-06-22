@@ -1208,11 +1208,16 @@ def readfold(listnewold,filename,oldlstlstr,oldlstlstl,spos,epos,newspos,newepos
                             for i in matdescsplit:
                                 matstardesc=str(matstardesc)+" "+str(i)
 
+                            log.debug( ["matstardesc: ", matstardesc])
+                            log.debug( listofmirstar)
                             listofmirstar.append(matstardesc)
                             listofmirstar.append(str(mirstar))
                             listofmirstar.append(str(mirstarspos)+".."+str(mirstarepos))
+                            log.debug( listofmirstar)
                             precsplit=precid.split()
+                            log.debug( ["precsplit: ", precsplit])
                             listofmirstar.append(str(precsplit[1]))
+                            log.debug( [str( precsplit[1])])
                             xcut=len(oldprecseq[:mirstarspos])
                             ycut=len(oldprecseq[mirstarepos+1:])
                             if mirorien=='5p' and ycut>10:
@@ -3473,10 +3478,7 @@ def sublist(queue, configurer, level, filename, args):
                     mtfs = openfile(outdir+filename.strip()+"-mirstar.fa")
                     for starrec in SeqIO.parse(mtfs,'fasta'):
                         curmatsplit=(starrec.description).split()
-                        curmatsplit1=(curmatsplit[1]).split('-')
-                        starrecID=curmatsplit1[0]
-
-                        if (curmatID).strip()==(starrecID).strip() and (resprecid.strip() in starrec.description):
+                        if resprecid == curmatsplit[-1]:
                             curmatstar=str(starrec.seq)
                             star=True
                             break
@@ -3640,11 +3642,8 @@ def sublist(queue, configurer, level, filename, args):
                     with openfile(outdir+filename.strip()+"-mirstar.fa") as msfa:
                         for starrec in SeqIO.parse(msfa,'fasta'):
                             curmatsplit=(starrec.description).split()
-                            curmatsplit1=(curmatsplit[1]).split('-')
-                            starrecID=curmatsplit1[0]
-                            #if (curmatID).strip()==(starrecID).strip(): #or (curmatID).strip()+'/' in (starrecID).strip() and (resprecid.strip() in starrec.description):
-                            if (curmatID).strip()==(starrecID).strip(): #CAVH
-                                curmatstar=str(starrec.seq)
+                            if resprecid == curmatsplit[-1]: #CAVH
+                                curmatstar= str(starrec.seq)
                                 star=True
                                 break
                             #else:
@@ -3663,7 +3662,15 @@ def sublist(queue, configurer, level, filename, args):
                                                  userflanking)
 
                     if coortemp1 == None or coortemp2 == None:
+
+                        ## THIS IS THE CASE IN FAMILY MIPF0001319 for example
+                        ## where rat candidate 3 has potential mature and mature* sequences
+                        ## but no suitable pair could be found
+                        ## Hence, the variables coortemp1 and coortemp2 are None
+                        ## Shouldn't this sequence be removed???
+                        
                         log.error(logid+'Not possible to locate miR or miR* in ' + curmatID)
+                        
 
                     if coortemp2<coortemp1:
                         tempseqex=curmatseq[:]

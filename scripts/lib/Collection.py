@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import logging
 import numpy as np
@@ -356,43 +357,22 @@ def alignTostock(align):
 
 ### CAVH functions
 
-def count_repetitions(longseq,pattern):
-    results=0
-    len_pattern = len(pattern)
-    for i in range(len(longseq)):
-        if longseq[i:i+len_pattern] == pattern:
-            results += 1
-    return results
-
 def search_pattern(longseq, pattern):
     start = longseq.find(pattern)
     end = int((start + len(pattern)) -1)
     return (start, end)
 
 
-def generate_array(longseq, pattern, number, mode):
-    pattern_len = len(pattern)
+def generate_array(longseq, pattern, mode):
+
     array = []
-    short_sequence = None
-    update_index = None
-    for j in range(0, number):  # (0, n-1)
-        if j == 0:  # Search on the complete sequence
-            start = longseq.find(pattern)
-            end = int((start + pattern_len) - 1)
-            assembly_data = [start, end, mode]
-            array.append(assembly_data)
-            short_sequence = longseq[end + 1:]
-            update_index = longseq.find(short_sequence)
-        else:
-            start_temp = short_sequence.find(pattern)
-            if start_temp != -1:
-                end_temp = int((start_temp + pattern_len) - 1)
-                start = int(start_temp + update_index)
-                end = int(end_temp + update_index)
-                assembly_data = [start, end, mode]
-                array.append(assembly_data)
-                short_sequence = short_sequence[end_temp + 1:]
-                update_index = longseq.find(short_sequence)
+
+    for i in re.finditer( pattern, longseq):
+        pos = list( i.span())
+        pos[1] -= 1
+        pos.append( mode)
+        array.append( pos)
+        
     return array
 
 
@@ -427,7 +407,7 @@ def detect_pairs(complete_array, longseq, mat1seq, curmatseq, curmatstar):
         #substring = None
         #update_index = None
         (pair0, number_pair) = iterate_over_pairs(complete_array, columns, curmatseq, curmatstar, longseq, number_pair)
-
+        
     #Here consider start in 0 with complete_array_one
     # Detect overlapping
     if columns_one > 1:
@@ -586,11 +566,11 @@ def find_positions(longseq, mat1seq, curmatseq, curmatstar, flanking):
     # Locate
     startprecursor = longseq.find(mat1seq)
     endprecursor = int((startprecursor + precursorlen)-1)
-    # Search the number of substrings along the long sequence
-    mir = count_repetitions(longseq,curmatseq)
-    mirstar = count_repetitions(longseq,curmatstar)
-    mir_array = generate_array(longseq, curmatseq, mir, "M")
-    mirstar_array = generate_array(longseq, curmatstar, mirstar, "S")
+
+    ## create array of all occurrences
+    mir_array = generate_array(longseq, curmatseq, "M")
+    mirstar_array = generate_array(longseq, curmatstar, "S")
+    
     # All array
     all_array = mir_array + mirstar_array
     all_array_sorted = sorted(all_array, key=itemgetter(0))
